@@ -1,72 +1,73 @@
 from flask import Flask, request, jsonify
+import openai
 import requests
 import os
 
 app = Flask(__name__)
 
-# Load environment variables
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+# Load keys from environment variables
+openai.api_key = os.environ.get("OPENAI_API_KEY")
 GHL_API_KEY = os.environ.get("GHL_API_KEY")
+GHL_LOCATION_ID = os.environ.get("GHL_LOCATION_ID")
 
-@app.route("/", methods=["GET"])
-def home():
-    return "GHL AI Bot is Live!", 200
+# Use a system prompt that sounds like YOU (Scott)
+SYSTEM_PROMPT = os.environ.get("SYSTEM_PROMPT") or \
+    "You are Scott Sweet, a helpful and experienced affiliate marketer. Answer clearly, kindly, and with confidence."
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
-    data = request.json
-    print("📦 Full Payload Dump:", data)  # This should now appear in logs
+    try:
+        data = request.json
+        print("🚀 Incoming data:", data)
 
-    # Flexible parsing based on common GHL formats
-    payload = data.get("payload", data)
-    contact = payload.get("contact", {}) or payload.get("data", {}).get("contact", {})
-    message = payload.get("message", {}) or payload.get("data", {}).get("message", {}) or payload
+        # Extract contact ID and message
+        contact_id = data.get("contact_id")
+        message = data.get("message")
 
-    contact_id = contact.get("id")
-    contact_name = contact.get("fullName", "Friend")
-    message_body = message.get("body", "")
+        if not contact_id or not message:
+            return jsonify({"error": "Missing contact ID or message"}), 400
 
-    if not contact_id or not message_body:
-        print("❌ Missing contact ID or message")
-        return jsonify({"error": "Missing contact ID or message"}), 400
+        # Call ChatGPT to generate reply
+        completion = openai.ChatCompletion.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": message}
+            ]
+        )
+        ai_reply = completion.choices[0].message.content.strip()
+        print("💬 AI Reply:", ai_reply)
 
-    print(f"📩 Message from {contact_name}: {message_body}")
+        # Send reply back to the contact using GHL API
+        send_url = "https://rest.gohighlevel.com/v1/conversations/messages"
 
-    prompt = f"Reply to this email as Scott Sweet in a friendly, helpful, professional tone. Here’s the message:\n\n{message_body}"
+        payload = {
+            "locationId": GHL_LOCATION_ID,
+            "contactId": contact_id,
+            "message": ai_reply,
+            "type": "Email"
+        }
 
-    headers = {
-        "Authorization": f"Bearer {OPENAI_API_KEY}"
-    }
+        headers = {
+            "Authorization": f"Bearer {GHL_API_KEY}",
+            "Content-Type": "application/json"
+        }
 
-    chat_payload = {
-        "model": "gpt-4",
-        "messages": [
-            {"role": "system", "content": "You are a helpful assistant replying as Scott Sweet."},
-            {"role": "user", "content": prompt}
-        ]
-    }
+        ghl_response = requests.post(send_url, json=payload, headers=headers)
+        print("📬 GHL Response:", ghl_response.text)
 
-    chat_response = requests.post("https://api.openai.com/v1/chat/completions", json=chat_payload, headers=headers)
-    gpt_reply = chat_response.json()["choices"][0]["message"]["content"].strip()
-    print("🤖 GPT Reply:", gpt_reply)
+        if ghl_response.status_code == 200:
+            return jsonify({"status": "success"}), 200
+        else:
+            return jsonify({"error": "Failed to send message to GHL", "details": ghl_response.text}), 500
 
-    ghl_url = "https://rest.gohighlevel.com/v1/conversations/messages"
-    ghl_headers = {
-        "Authorization": f"Bearer {GHL_API_KEY}",
-        "Content-Type": "application/json"
-    }
+    except Exception as e:
+        print("❌ Error:", str(e))
+        return jsonify({"error": str(e)}), 500
 
-    ghl_data = {
-        "contactId": contact_id,
-        "message": gpt_reply,
-        "type": "Email"
-    }
-
-    ghl_response = requests.post(ghl_url, headers=ghl_headers, json=ghl_data)
-    print("📤 GHL Response:", ghl_response.status_code, ghl_response.text)
-
-    return jsonify({"status": "sent", "reply": gpt_reply}), 200
+@app.route("/", methods=["GET"])
+def index():
+    return "Scott's AI Email Bot is live!"
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=10000)
