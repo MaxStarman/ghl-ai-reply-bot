@@ -31,7 +31,7 @@ def webhook():
         # Ask ChatGPT to generate a reply
         try:
             response = openai.Completion.create(
-                model="gpt-4",
+                model="gpt-4o",
                 prompt=message,
                 max_tokens=150
             )
