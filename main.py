@@ -30,14 +30,12 @@ def webhook():
 
         # Ask ChatGPT to generate a reply
         try:
-            completion = openai.ChatCompletion.create(
+            response = openai.Completion.create(
                 model="gpt-4",
-                messages=[
-                    {"role": "system", "content": SYSTEM_PROMPT},
-                    {"role": "user", "content": message}
-                ]
+                prompt=message,
+                max_tokens=150
             )
-            ai_reply = completion.choices[0].message.content.strip()
+            ai_reply = response.choices[0].text.strip()
             print("💬 AI Reply:", ai_reply)
         except Exception as e:
             print("❌ ChatGPT Error:", e)
@@ -77,3 +75,11 @@ def webhook():
     except Exception as e:
         print("❌ Unexpected Error:", str(e))
         return jsonify({"error": str(e)}), 500
+
+@app.route("/", methods=["GET"])
+def index():
+    return "Scott's AI Email Bot is live and replying!"
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=10000)
+
