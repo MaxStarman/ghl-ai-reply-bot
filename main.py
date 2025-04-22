@@ -11,7 +11,8 @@ GHL_API_KEY = os.environ.get('GHL_API_KEY')
 @app.route("/webhook", methods=["POST"])
 def webhook():
     data = request.json
-    print("📦 Raw Webhook Data:", data)  # Debugging
+    print("📦 Full Payload Dump:", data)  # <--- THIS IS NEW
+
 
     # Try to get payload, fallback to top-level
     payload = data.get("payload", data)
