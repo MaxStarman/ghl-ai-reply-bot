@@ -17,9 +17,14 @@ def webhook():
     data = request.json
 
     # Extract contact info and message
-    contact_id = data.get("contact", {}).get("id")
-    contact_name = data.get("contact", {}).get("fullName", "Friend")
-    incoming_msg = data.get("body", "")
+   # Some GHL webhooks send the message inside 'payload' or 'message'
+payload = data.get("payload", data)
+message_data = payload.get("message", payload)
+
+contact_id = payload.get("contact", {}).get("id")
+contact_name = payload.get("contact", {}).get("fullName", "Friend")
+incoming_msg = message_data.get("body", "")
+
 
     print("📩 Incoming Message:", incoming_msg)
 
