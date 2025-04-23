@@ -63,7 +63,7 @@ def webhook():
         print("📤 GHL response status:", ghl_response.status_code)
         print("📤 GHL response text:", ghl_response.text)
 
-        return jsonify({"reply": reply})
+        return jsonify({"status": "sent", "emailBody": reply})
 
     except Exception as e:
         print("❌ Error:", e)
