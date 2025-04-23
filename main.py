@@ -20,9 +20,10 @@ def webhook():
         user_message = data.get("message", {}).get("body", "")
         contact_id = data.get("contact_id")
         location_id = data.get("location", {}).get("id")
+        contact_email = data.get("email")
 
-        if not user_message or not contact_id or not location_id:
-            return jsonify({"error": "Missing required fields (message, contact_id, or location_id)"}), 400
+        if not user_message or not contact_id or not location_id or not contact_email:
+            return jsonify({"error": "Missing required fields (message, contact_id, location_id, or email)"}), 400
 
         messages = [
             {"role": "system", "content": "You are a helpful affiliate marketer responding to messages."},
@@ -42,22 +43,24 @@ def webhook():
             "Content-Type": "application/json"
         }
 
-        message_payload = {
-            "contactId": contact_id,
+        email_payload = {
+            "to": contact_email,
             "locationId": location_id,
-            "message": reply
+            "subject": "RE: Your Question",
+            "body": reply,
+            "contactId": contact_id
         }
 
-        print("📦 Payload to GHL /conversations/messages endpoint:", message_payload)
+        print("📧 Payload to GHL /emails/send endpoint:", email_payload)
 
         ghl_response = requests.post(
-            "https://rest.gohighlevel.com/v1/conversations/messages",
-            json=message_payload,
+            "https://rest.gohighlevel.com/v1/emails/send",
+            json=email_payload,
             headers=headers
         )
 
-        print("📧 GHL response status:", ghl_response.status_code)
-        print("📧 GHL response text:", ghl_response.text)
+        print("📤 GHL response status:", ghl_response.status_code)
+        print("📤 GHL response text:", ghl_response.text)
 
         return jsonify({"reply": reply})
 
