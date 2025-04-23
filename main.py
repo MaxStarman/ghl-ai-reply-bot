@@ -3,11 +3,14 @@ from flask import Flask, request, jsonify
 import openai
 import requests
 
+# Set up Flask app
 app = Flask(__name__)
 
+# Set your API keys from environment variables
 openai.api_key = os.getenv("OPENAI_API_KEY")
 ghl_api_key = os.getenv("GHL_API_KEY")
 
+# Define the route to receive webhook events
 @app.route("/webhook", methods=["POST"])
 def webhook():
     try:
@@ -21,7 +24,6 @@ def webhook():
         if not user_message or not contact_id or not contact_email:
             return jsonify({"error": "Missing message, contact_id, or email"}), 400
 
-        # Build the AI conversation
         messages = [
             {"role": "system", "content": "You are a helpful affiliate marketer responding to messages."},
             {"role": "user", "content": user_message}
@@ -40,25 +42,24 @@ def webhook():
             "Content-Type": "application/json"
         }
 
-        # Email send payload
-        payload = {
+        message_payload = {
             "contactId": contact_id,
             "type": "Email",
             "direction": "outgoing",
             "email": {
                 "to": contact_email,
                 "from": "scott@lc.hbquarters.com",
-                "subject": "Re: Your message",
+                "subject": "Reply from Scott",
                 "body": reply,
                 "send": True
             }
         }
 
-        print("📦 Payload to GHL:", payload)
+        print("📦 Payload to GHL:", message_payload)
 
         ghl_response = requests.post(
             "https://rest.gohighlevel.com/v1/conversations/messages",
-            json=payload,
+            json=message_payload,
             headers=headers
         )
 
@@ -70,6 +71,7 @@ def webhook():
         print("❌ Error:", e)
         return jsonify({"error": str(e)}), 500
 
+# Run the app on the correct port for Render
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
