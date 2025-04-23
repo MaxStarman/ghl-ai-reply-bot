@@ -65,7 +65,8 @@ def webhook():
             headers=headers
         )
 
-        print("📧 GHL response:", ghl_response.status_code, ghl_response.text)
+        print("📧 GHL response status:", ghl_response.status_code)
+        print("📧 GHL response text:", ghl_response.text)
 
         return jsonify({"reply": reply})
 
