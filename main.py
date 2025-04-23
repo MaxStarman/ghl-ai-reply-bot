@@ -1,85 +1,47 @@
+import os
 from flask import Flask, request, jsonify
 import openai
-import requests
-import os
 
+# Set up Flask app
 app = Flask(__name__)
 
-# Load keys from environment variables
-openai.api_key = os.environ.get("OPENAI_API_KEY")
-GHL_API_KEY = os.environ.get("GHL_API_KEY")
-GHL_LOCATION_ID = os.environ.get("GHL_LOCATION_ID")
-FROM_EMAIL = os.environ.get("FROM_EMAIL") or "scott@lc.hbquarters.com"
-FROM_NAME = os.environ.get("FROM_NAME") or "Scott Sweet"
+# Set your OpenAI API key from environment variable or paste your key here directly
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
-SYSTEM_PROMPT = os.environ.get("SYSTEM_PROMPT") or \
-    "You are Scott Sweet, a helpful and experienced affiliate marketer who replies clearly, kindly, and confidently."
-
+# Define the route to receive webhook events
 @app.route("/webhook", methods=["POST"])
 def webhook():
     try:
-        data = request.json
-        print("🚀 Incoming data:", data)
+        data = request.get_json()
+        print("\U0001F680 Incoming data:", data)
 
-        contact_id = data.get("contact_id")
-        message = data.get("message")
+        # Extract user message from the webhook payload
+        user_message = data.get("message", {}).get("body", "")
+        if not user_message:
+            return jsonify({"error": "No message body found."}), 400
 
-        if not contact_id or not message:
-            print("❌ Missing contact_id or message!")
-            return jsonify({"error": "Missing contact ID or message"}), 400
+        # Prepare messages for GPT-4o
+        messages = [
+            {"role": "system", "content": "You are a helpful affiliate marketer responding to messages."},
+            {"role": "user", "content": user_message}
+        ]
 
-        # Ask ChatGPT to generate a reply
-        try:
-            response = openai.Completion.create(
-                model="gpt-4o",
-                prompt=message,
-                max_tokens=150
-            )
-            ai_reply = response.choices[0].text.strip()
-            print("💬 AI Reply:", ai_reply)
-        except Exception as e:
-            print("❌ ChatGPT Error:", e)
-            return jsonify({"error": "ChatGPT failed", "details": str(e)}), 500
+        # Call OpenAI GPT-4o
+        response = openai.ChatCompletion.create(
+            model="gpt-4o",
+            messages=messages
+        )
 
-        # Send reply using GHL API
-        try:
-            send_url = "https://rest.gohighlevel.com/v1/conversations/messages"
-            payload = {
-                "locationId": GHL_LOCATION_ID,
-                "contactId": contact_id,
-                "message": ai_reply,
-                "type": "Email",
-                "from": {
-                    "email": FROM_EMAIL,
-                    "name": FROM_NAME
-                }
-            }
+        reply = response.choices[0].message.content
+        print("\u2705 Response:", reply)
 
-            headers = {
-                "Authorization": f"Bearer {GHL_API_KEY}",
-                "Content-Type": "application/json"
-            }
-
-            ghl_response = requests.post(send_url, json=payload, headers=headers)
-            print("📬 GHL Response:", ghl_response.status_code, ghl_response.text)
-
-            if ghl_response.status_code == 200:
-                return jsonify({"status": "success"}), 200
-            else:
-                return jsonify({"error": "GHL send failed", "details": ghl_response.text}), 500
-
-        except Exception as e:
-            print("❌ GHL API Error:", e)
-            return jsonify({"error": "Failed to send message", "details": str(e)}), 500
+        return jsonify({"reply": reply})
 
     except Exception as e:
-        print("❌ Unexpected Error:", str(e))
+        print("\u274C Error:", e)
         return jsonify({"error": str(e)}), 500
 
-@app.route("/", methods=["GET"])
-def index():
-    return "Scott's AI Email Bot is live and replying!"
-
+# Run the app on the correct port for Render
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000)
-
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
