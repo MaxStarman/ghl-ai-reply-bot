@@ -45,8 +45,7 @@ def webhook():
         message_payload = {
             "contactId": contact_id,
             "locationId": location_id,
-            "message": reply,
-            "type": "Email"
+            "message": reply
         }
 
         print("📦 Payload to GHL /conversations/messages endpoint:", message_payload)
