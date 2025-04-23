@@ -15,9 +15,9 @@ ghl_api_key = os.getenv("GHL_API_KEY")
 def webhook():
     try:
         data = request.get_json()
-        print("\U0001F680 Incoming data:", data)
+        print("🚀 Incoming data:", data)
 
-        # Extract user message
+        # Extract user message and contact ID
         user_message = data.get("message", {}).get("body", "")
         contact_id = data.get("contact_id")
 
@@ -37,10 +37,10 @@ def webhook():
         )
 
         reply = response.choices[0].message.content
-        print("\u2705 Response:", reply)
-        print("\U0001F9E0 GPT full response:", response)
+        print("✅ Response:", reply)
+        print("🧠 GPT full response:", response)
 
-        # Send reply back to GHL
+        # Send reply back to GHL as email
         if contact_id:
             headers = {
                 "Authorization": f"Bearer {ghl_api_key}",
@@ -48,19 +48,23 @@ def webhook():
             }
             message_payload = {
                 "contactId": contact_id,
-                "message": reply
+                "type": "Email",
+                "subject": "Reply from Scott",
+                "body": reply,
+                "direction": "outgoing",
+                "from": "scott@lc.hbquarters.com"
             }
             ghl_response = requests.post(
                 "https://rest.gohighlevel.com/v1/conversations/messages",
                 json=message_payload,
                 headers=headers
             )
-            print("\U0001F4EC Sent reply to GHL:", ghl_response.status_code, ghl_response.text)
+            print("📧 Sent reply to GHL:", ghl_response.status_code, ghl_response.text)
 
         return jsonify({"reply": reply})
 
     except Exception as e:
-        print("\u274C Error:", e)
+        print("❌ Error:", e)
         return jsonify({"error": str(e)}), 500
 
 # Run the app on the correct port for Render
