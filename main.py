@@ -3,11 +3,14 @@ from flask import Flask, request, jsonify
 import openai
 import requests
 
+# Set up Flask app
 app = Flask(__name__)
 
+# Set your API keys from environment variables
 openai.api_key = os.getenv("OPENAI_API_KEY")
 ghl_api_key = os.getenv("GHL_API_KEY")
 
+# Define the route to receive webhook events
 @app.route("/webhook", methods=["POST"])
 def webhook():
     try:
@@ -43,10 +46,12 @@ def webhook():
                 "contactId": contact_id,
                 "type": "Email",
                 "direction": "outgoing",
-                "subject": "Reply from Scott",
-                "body": reply,
-                "fromEmail": "scott@lc.hbquarters.com",
-                "send": True
+                "email": {
+                    "from": "scott@lc.hbquarters.com",
+                    "subject": "Reply from Scott",
+                    "body": reply,
+                    "send": True
+                }
             }
 
             print("📦 Payload to GHL:", message_payload)
@@ -65,6 +70,7 @@ def webhook():
         print("❌ Error:", e)
         return jsonify({"error": str(e)}), 500
 
+# Run the app on the correct port for Render
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
