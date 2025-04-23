@@ -38,6 +38,7 @@ def webhook():
 
         reply = response.choices[0].message.content
         print("\u2705 Response:", reply)
+        print("\U0001F9E0 GPT full response:", response)
 
         # Send reply back to GHL
         if contact_id:
@@ -64,5 +65,5 @@ def webhook():
 
 # Run the app on the correct port for Render
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
+    port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
