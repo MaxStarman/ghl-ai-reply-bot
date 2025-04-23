@@ -45,20 +45,16 @@ def webhook():
 
         message_payload = {
             "locationId": location_id,
-            "contactId": contact_id,
-            "type": "Email",
-            "message": {
-                "to": contact_email,
-                "from": "scott@lc.hbquarters.com",
-                "subject": "Reply from Scott",
-                "body": reply
-            }
+            "to": contact_email,
+            "from": "scott@lc.hbquarters.com",
+            "subject": "Reply from Scott",
+            "body": reply
         }
 
-        print("📦 Payload to GHL /reply endpoint:", message_payload)
+        print("📦 Payload to GHL /messages/send endpoint:", message_payload)
 
         ghl_response = requests.post(
-            "https://rest.gohighlevel.com/v1/conversations/reply",
+            "https://rest.gohighlevel.com/v1/messages/send",
             json=message_payload,
             headers=headers
         )
