@@ -45,6 +45,7 @@ def webhook():
 
         email_payload = {
             "to": contact_email,
+            "from": "scott@lc.hbquarters.com",
             "locationId": location_id,
             "subject": "RE: Your Question",
             "body": reply,
