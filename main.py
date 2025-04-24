@@ -28,10 +28,9 @@ def webhook():
         reply = response.choices[0].message.content
         print("✅ GPT Reply:", reply)
 
-        # Return ai_reply as a flat key for GHL compatibility
+        # Use a flat key for GHL compatibility
         return jsonify({
-            "reply": reply,
-            "contact.ai_reply": reply
+            "ai_reply": reply
         })
 
     except Exception as e:
