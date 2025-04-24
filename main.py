@@ -28,8 +28,8 @@ def webhook():
         reply = response.choices[0].message.content
         print("✅ GPT Reply:", reply)
 
-        # Send reply directly as top-level value for GHL compatibility
-        return jsonify({"reply": reply})
+        # Return reply as plain text for GHL compatibility
+        return reply, 200, {'Content-Type': 'text/plain'}
 
     except Exception as e:
         print("❌ Error:", e)
