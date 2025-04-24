@@ -28,13 +28,11 @@ def webhook():
         reply = response.choices[0].message.content
         print("✅ GPT Reply:", reply)
 
-        # Send back the reply AND save it to a custom field for use in GHL email
+        # Include the reply in a top-level key and also in a nested contact object for GHL
         return jsonify({
             "reply": reply,
             "contact": {
-                "customField": {
-                    "ai_reply": reply
-                }
+                "ai_reply": reply
             }
         })
 
