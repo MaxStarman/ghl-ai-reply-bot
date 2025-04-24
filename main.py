@@ -1,5 +1,5 @@
 import os
-from flask import Flask, request
+from flask import Flask, request, jsonify
 import openai
 
 app = Flask(__name__)
@@ -13,7 +13,7 @@ def webhook():
 
         user_message = data.get("message", {}).get("body", "")
         if not user_message:
-            return "Missing user message", 400
+            return jsonify({"error": "Missing user message"}), 400
 
         messages = [
             {"role": "system", "content": "You are a helpful affiliate marketer responding to messages."},
@@ -28,12 +28,19 @@ def webhook():
         reply = response.choices[0].message.content
         print("✅ GPT Reply:", reply)
 
-        # Return plain text reply for better GHL compatibility
-        return reply, 200, {'Content-Type': 'text/plain'}
+        # Send back the reply AND save it to a custom field for use in GHL email
+        return jsonify({
+            "reply": reply,
+            "contact": {
+                "customField": {
+                    "ai_reply": reply
+                }
+            }
+        })
 
     except Exception as e:
         print("❌ Error:", e)
-        return str(e), 500
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
