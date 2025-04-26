@@ -1,9 +1,11 @@
 import os
+import requests
 from flask import Flask, request, jsonify
 import openai
 
 app = Flask(__name__)
 openai.api_key = os.getenv("OPENAI_API_KEY")
+GHL_API_KEY = os.getenv("GHL_API_KEY")
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
@@ -12,8 +14,10 @@ def webhook():
         print("🚀 Incoming data:", data)
 
         user_message = data.get("message", {}).get("body", "")
-        if not user_message:
-            return jsonify({"error": "Missing user message"}), 400
+        contact_id = data.get("contact_id")
+
+        if not user_message or not contact_id:
+            return jsonify({"error": "Missing message or contact_id"}), 400
 
         messages = [
             {"role": "system", "content": "You are a helpful affiliate marketer responding to messages."},
@@ -28,12 +32,25 @@ def webhook():
         reply = response.choices[0].message.content
         print("✅ GPT Reply:", reply)
 
-        # Return nested key for GHL compatibility with update field action
-        return jsonify({
-            "webhook": {
-                "ai_reply": reply
-            }
-        })
+        # Send reply to GHL custom field 'AI Reply'
+        ghl_url = f"https://rest.gohighlevel.com/v1/contacts/{contact_id}"
+        headers = {
+            "Authorization": f"Bearer {GHL_API_KEY}",
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "customField": [
+                {
+                    "id": "contact.ai_reply",
+                    "value": reply
+                }
+            ]
+        }
+
+        update_response = requests.put(ghl_url, headers=headers, json=payload)
+        print("📬 Update Response:", update_response.status_code, update_response.text)
+
+        return jsonify({"status": "success"})
 
     except Exception as e:
         print("❌ Error:", e)
