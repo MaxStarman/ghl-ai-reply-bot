@@ -11,7 +11,7 @@ GHL_API_KEY = os.getenv("GHL_API_KEY")
 def webhook():
     try:
         data = request.get_json()
-        print("🚀 Incoming data:", data)
+        print("\ud83d\ude80 Incoming data:", data)
 
         user_message = data.get("message", {}).get("body", "")
         contact_id = data.get("contact_id")
@@ -30,9 +30,9 @@ def webhook():
         )
 
         reply = response.choices[0].message.content
-        print("✅ GPT Reply:", reply)
+        print("\u2705 GPT Reply:", reply)
 
-        # Send reply to GHL custom field 'AI Reply'
+        # Send reply to GHL custom field using actual ID
         ghl_url = f"https://rest.gohighlevel.com/v1/contacts/{contact_id}"
         headers = {
             "Authorization": f"Bearer {GHL_API_KEY}",
@@ -41,19 +41,19 @@ def webhook():
         payload = {
             "customField": [
                 {
-                    "id": "contact.ai_reply",
+                    "id": "1745758706708",  # Correct Custom Field ID
                     "value": reply
                 }
             ]
         }
 
         update_response = requests.put(ghl_url, headers=headers, json=payload)
-        print("📬 Update Response:", update_response.status_code, update_response.text)
+        print("\ud83d\udcec Update Response:", update_response.status_code, update_response.text)
 
         return jsonify({"status": "success"})
 
     except Exception as e:
-        print("❌ Error:", e)
+        print("\u274c Error:", e)
         return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
